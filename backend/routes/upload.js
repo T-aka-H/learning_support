@@ -8,13 +8,13 @@ const router = express.Router();
 // Gemini AI初期化
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Multer設定（メモリストレージ）
+// Multer設定（複数ファイル対応）
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
-    files: 1
+    fileSize: 5 * 1024 * 1024, // 5MB per file
+    files: 10 // 最大10枚まで
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -26,7 +26,7 @@ const upload = multer({
 });
 
 // 画像前処理関数
-async function preprocessImage(buffer) {
+async function preprocessImage(buffer, filename) {
   try {
     return await sharp(buffer)
       .resize(2048, 2048, { 
@@ -39,59 +39,99 @@ async function preprocessImage(buffer) {
       })
       .toBuffer();
   } catch (error) {
-    console.error('Image preprocessing error:', error);
+    console.error(`Image preprocessing error for ${filename}:`, error);
     return buffer; // フォールバック
   }
 }
 
-// OCR処理関数
-async function performOCR(imageBuffer, retries = 3) {
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// 複数画像OCR処理関数
+async function performMultiImageOCR(imageBuffers, filenames, retries = 2) {
+  const model = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash",
+    generationConfig: {
+      response_mime_type: "application/json"
+    }
+  });
   
+  // 複数画像用のプロンプト
   const ocrPrompt = `
-あなたは中学受験教材の OCR 専門家です。画像内のテキストを正確に抽出してください。
+あなたは学習教材のOCR専門家です。以下の${imageBuffers.length}枚の画像からテキストを抽出し、統合してください。
 
 【抽出ルール】
-1. 文字の配置や段落構造を維持
-2. 数字、記号、特殊文字も正確に認識
-3. 難しい漢字には読み仮名を併記
-4. 図表やグラフの説明も含める
-5. 文脈を考慮して誤認識を修正
+1. 各画像の内容を順番に解析
+2. 関連する内容は統合し、独立した内容は分離
+3. 数式、図表、特殊記号も正確に認識
+4. 画像間の連続性を考慮（問題の続き、解答と問題など）
+5. ページ番号や章番号がある場合は構造を維持
 
-【出力形式】
-- 純粋なテキストのみ
-- 改行や段落は維持
-- 装飾や余計な説明は不要
+【JSON出力形式】
+{
+  "totalImages": ${imageBuffers.length},
+  "extractedText": "統合されたテキスト全体",
+  "imageDetails": [
+    {
+      "imageIndex": 1,
+      "filename": "ファイル名",
+      "content": "この画像から抽出されたテキスト",
+      "contentType": "問題|解答|説明|図表",
+      "confidence": 0.95
+    }
+  ],
+  "combinedAnalysis": {
+    "detectedSubjects": ["数学", "理科"],
+    "hasMultipleTopics": true,
+    "suggestedOrder": [1, 2, 3],
+    "relationshipType": "連続|独立|問題と解答"
+  }
+}
 
-抽出したテキスト:
-`;
+【重要】
+- 必ずJSON形式で回答
+- 画像の順序を考慮して内容を整理
+- 不明瞭な部分は [不明] と記載
+- 各画像の信頼度も評価`;
 
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      const response = await model.generateContent([
-        ocrPrompt,
-        {
-          inlineData: {
-            data: imageBuffer.toString('base64'),
-            mimeType: 'image/jpeg'
-          }
+      // 複数の画像データを準備
+      const imageParts = imageBuffers.map((buffer, index) => ({
+        inlineData: {
+          data: buffer.toString('base64'),
+          mimeType: 'image/jpeg'
         }
-      ]);
+      }));
 
-      const text = response.response.text().trim();
+      // プロンプトと画像を結合
+      const requestParts = [ocrPrompt, ...imageParts];
+
+      console.log(`Sending ${imageBuffers.length} images to Gemini (attempt ${attempt + 1})`);
+
+      const response = await model.generateContent(requestParts);
+      const result = response.response.text();
       
-      if (text && text.length > 10) {
-        return {
-          success: true,
-          text: text,
-          confidence: calculateConfidence(text)
-        };
+      // JSON解析
+      let parsedResult;
+      try {
+        parsedResult = JSON.parse(result);
+      } catch (parseError) {
+        throw new Error(`JSON parse failed: ${parseError.message}`);
       }
-      
-      throw new Error('OCR結果が短すぎます');
+
+      // ファイル名を追加
+      if (parsedResult.imageDetails) {
+        parsedResult.imageDetails.forEach((detail, index) => {
+          detail.filename = filenames[index] || `image_${index + 1}`;
+        });
+      }
+
+      return {
+        success: true,
+        data: parsedResult,
+        rawResponse: result
+      };
       
     } catch (error) {
-      console.error(`OCR attempt ${attempt + 1} failed:`, error.message);
+      console.error(`Multi-image OCR attempt ${attempt + 1} failed:`, error.message);
       
       if (attempt < retries - 1) {
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
@@ -101,37 +141,23 @@ async function performOCR(imageBuffer, retries = 3) {
       return {
         success: false,
         error: error.message,
-        text: ''
+        data: null
       };
     }
   }
 }
 
-// テキスト信頼度計算
-function calculateConfidence(text) {
-  let score = 0.5; // 基準点
-  
-  // 日本語文字の比率
-  const japaneseChars = text.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g);
-  if (japaneseChars) {
-    score += (japaneseChars.length / text.length) * 0.3;
-  }
-  
-  // 文の構造
-  if (text.includes('。') || text.includes('、')) score += 0.1;
-  if (text.match(/\d+/)) score += 0.1; // 数字が含まれる
-  
-  return Math.min(Math.max(score, 0), 1);
-}
-
 // メモリクリーンアップミドルウェア
 const cleanupMemory = (req, res, next) => {
   res.on('finish', () => {
-    if (req.file?.buffer) {
-      req.file.buffer = null;
+    if (req.files) {
+      req.files.forEach(file => {
+        if (file.buffer) {
+          file.buffer = null;
+        }
+      });
     }
     
-    // 強制ガベージコレクション（本番環境では注意）
     if (global.gc && process.env.NODE_ENV === 'production') {
       global.gc();
     }
@@ -139,7 +165,7 @@ const cleanupMemory = (req, res, next) => {
   next();
 };
 
-// ファイルアップロード&OCR処理エンドポイント
+// 単一ファイルアップロード（既存機能との互換性）
 router.post('/', upload.single('image'), cleanupMemory, async (req, res) => {
   try {
     if (!req.file) {
@@ -148,13 +174,10 @@ router.post('/', upload.single('image'), cleanupMemory, async (req, res) => {
       });
     }
 
-    console.log(`Processing image: ${req.file.originalname}, size: ${req.file.size} bytes`);
+    console.log(`Processing single image: ${req.file.originalname}`);
 
-    // 画像前処理
-    const processedBuffer = await preprocessImage(req.file.buffer);
-    
-    // OCR実行
-    const ocrResult = await performOCR(processedBuffer);
+    const processedBuffer = await preprocessImage(req.file.buffer, req.file.originalname);
+    const ocrResult = await performMultiImageOCR([processedBuffer], [req.file.originalname]);
     
     if (!ocrResult.success) {
       return res.status(500).json({
@@ -163,27 +186,22 @@ router.post('/', upload.single('image'), cleanupMemory, async (req, res) => {
       });
     }
 
-    // テキストの最低品質チェック
-    if (ocrResult.text.length < 20) {
-      return res.status(400).json({
-        error: '抽出されたテキストが短すぎます。より鮮明な画像をアップロードしてください。'
-      });
-    }
-
+    const data = ocrResult.data;
+    
     res.json({
       success: true,
-      extractedText: ocrResult.text,
-      confidence: ocrResult.confidence,
+      extractedText: data.extractedText,
+      confidence: data.imageDetails[0]?.confidence || 0.8,
       metadata: {
         originalSize: req.file.size,
         processedSize: processedBuffer.length,
-        textLength: ocrResult.text.length
+        textLength: data.extractedText.length,
+        imageCount: 1
       }
     });
 
   } catch (error) {
-    console.error('Upload processing error:', error);
-    
+    console.error('Single image processing error:', error);
     res.status(500).json({
       error: 'ファイル処理中にエラーが発生しました',
       message: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -191,33 +209,191 @@ router.post('/', upload.single('image'), cleanupMemory, async (req, res) => {
   }
 });
 
-// テスト用エンドポイント
-router.post('/test-ocr', express.json(), async (req, res) => {
+// 複数ファイルアップロード（新機能）
+router.post('/multiple', upload.array('images', 10), cleanupMemory, async (req, res) => {
   try {
-    const { text } = req.body;
-    
-    if (!text) {
+    if (!req.files || req.files.length === 0) {
       return res.status(400).json({
-        error: 'テストテキストが提供されていません'
+        error: '画像ファイルがアップロードされていません'
+      });
+    }
+
+    if (req.files.length > 10) {
+      return res.status(400).json({
+        error: '一度にアップロードできる画像は10枚までです'
+      });
+    }
+
+    console.log(`Processing ${req.files.length} images:`, req.files.map(f => f.originalname));
+
+    // 全ての画像を前処理
+    const processedImages = await Promise.all(
+      req.files.map(async (file) => {
+        const processed = await preprocessImage(file.buffer, file.originalname);
+        return {
+          buffer: processed,
+          originalName: file.originalname,
+          originalSize: file.size,
+          processedSize: processed.length
+        };
+      })
+    );
+
+    // 複数画像OCR実行
+    const ocrResult = await performMultiImageOCR(
+      processedImages.map(img => img.buffer),
+      processedImages.map(img => img.originalName)
+    );
+    
+    if (!ocrResult.success) {
+      return res.status(500).json({
+        error: '複数画像OCR処理に失敗しました',
+        details: ocrResult.error
+      });
+    }
+
+    const data = ocrResult.data;
+
+    // テキストの最低品質チェック
+    if (data.extractedText.length < 10) {
+      return res.status(400).json({
+        error: '抽出されたテキストが短すぎます。より鮮明な画像をアップロードしてください。'
       });
     }
 
     res.json({
       success: true,
-      extractedText: text,
-      confidence: 1.0,
+      extractedText: data.extractedText,
+      imageCount: req.files.length,
+      imageDetails: data.imageDetails,
+      combinedAnalysis: data.combinedAnalysis,
       metadata: {
-        textLength: text.length,
-        testMode: true
+        totalOriginalSize: processedImages.reduce((sum, img) => sum + img.originalSize, 0),
+        totalProcessedSize: processedImages.reduce((sum, img) => sum + img.processedSize, 0),
+        textLength: data.extractedText.length,
+        averageConfidence: data.imageDetails.reduce((sum, detail) => sum + detail.confidence, 0) / data.imageDetails.length
+      },
+      files: processedImages.map(img => ({
+        originalName: img.originalName,
+        originalSize: img.originalSize,
+        processedSize: img.processedSize
+      }))
+    });
+
+  } catch (error) {
+    console.error('Multiple image processing error:', error);
+    
+    res.status(500).json({
+      error: '複数画像処理中にエラーが発生しました',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// バッチ処理（大量画像用）
+router.post('/batch', upload.array('images', 20), cleanupMemory, async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        error: '画像ファイルがアップロードされていません'
+      });
+    }
+
+    const batchSize = 5; // 5枚ずつ処理
+    const batches = [];
+    
+    for (let i = 0; i < req.files.length; i += batchSize) {
+      batches.push(req.files.slice(i, i + batchSize));
+    }
+
+    console.log(`Processing ${req.files.length} images in ${batches.length} batches`);
+
+    const allResults = [];
+    let combinedText = '';
+
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex];
+      
+      console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} images)`);
+
+      // バッチ内の画像を前処理
+      const processedBatch = await Promise.all(
+        batch.map(async (file) => {
+          const processed = await preprocessImage(file.buffer, file.originalname);
+          return {
+            buffer: processed,
+            originalName: file.originalname,
+            originalSize: file.size
+          };
+        })
+      );
+
+      // バッチOCR実行
+      const batchResult = await performMultiImageOCR(
+        processedBatch.map(img => img.buffer),
+        processedBatch.map(img => img.originalName)
+      );
+
+      if (batchResult.success) {
+        allResults.push({
+          batchIndex: batchIndex + 1,
+          ...batchResult.data
+        });
+        combinedText += batchResult.data.extractedText + '\n\n';
+      } else {
+        console.error(`Batch ${batchIndex + 1} failed:`, batchResult.error);
+      }
+
+      // バッチ間で少し待機（API制限対策）
+      if (batchIndex < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    res.json({
+      success: true,
+      extractedText: combinedText.trim(),
+      totalImages: req.files.length,
+      processedBatches: batches.length,
+      batchResults: allResults,
+      metadata: {
+        processingTime: Date.now(),
+        successfulBatches: allResults.length,
+        failedBatches: batches.length - allResults.length
       }
     });
 
   } catch (error) {
-    console.error('Test OCR error:', error);
+    console.error('Batch processing error:', error);
+    
     res.status(500).json({
-      error: 'テストOCR処理中にエラーが発生しました'
+      error: 'バッチ処理中にエラーが発生しました',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
+});
+
+// アップロード状況確認エンドポイント
+router.get('/status', (req, res) => {
+  res.json({
+    service: 'Multi-Image OCR Upload Service',
+    status: 'operational',
+    version: '2.0.0',
+    features: {
+      singleImage: 'POST /api/upload',
+      multipleImages: 'POST /api/upload/multiple (up to 10 images)',
+      batchProcessing: 'POST /api/upload/batch (up to 20 images)',
+      supportedFormats: ['image/jpeg', 'image/png', 'image/webp'],
+      maxFileSize: '5MB per image',
+      aiModel: 'Gemini 1.5 Flash'
+    },
+    limits: {
+      singleUpload: 1,
+      multipleUpload: 10,
+      batchUpload: 20,
+      maxFileSize: 5485760
+    }
+  });
 });
 
 module.exports = router;
