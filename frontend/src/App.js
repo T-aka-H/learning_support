@@ -243,6 +243,11 @@ function App() {
   const [error, setError] = useState('');
   const [uploadMode, setUploadMode] = useState('single'); // 'single' or 'multiple'
   const [imageDetails, setImageDetails] = useState([]);
+  
+  // 問題生成設定
+  const [questionCount, setQuestionCount] = useState(3);
+  const [difficulty, setDifficulty] = useState('standard');
+  const [questionType, setQuestionType] = useState('multiple_choice');
 
   // ファイル選択処理（複数対応）
   const handleFileSelect = (event) => {
@@ -336,9 +341,9 @@ function App() {
         },
         body: JSON.stringify({
           text: extractedText,
-          questionType: 'multiple_choice',
-          questionCount: 3,
-          difficulty: 'standard'
+          questionType: questionType,
+          questionCount: questionCount,
+          difficulty: difficulty
         })
       });
 
