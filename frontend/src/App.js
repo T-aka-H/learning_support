@@ -235,25 +235,27 @@ const QuestionCard = ({ question, questionNumber }) => {
 };
 
 function App() {
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [extractedText, setExtractedText] = useState('');
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('upload');
   const [error, setError] = useState('');
+  const [uploadMode, setUploadMode] = useState('single'); // 'single' or 'multiple'
+  const [imageDetails, setImageDetails] = useState([]);
 
-  // ファイル選択処理
+  // ファイル選択処理（複数対応）
   const handleFileSelect = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedFile(file);
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+      setSelectedFiles(files);
       setError('');
     }
   };
 
-  // OCR処理
+  // OCR処理（単一・複数対応）
   const handleOCR = async () => {
-    if (!selectedFile) {
+    if (selectedFiles.length === 0) {
       setError('画像ファイルを選択してください');
       return;
     }
@@ -263,20 +265,50 @@ function App() {
 
     try {
       const formData = new FormData();
-      formData.append('image', selectedFile);
+      
+      if (uploadMode === 'single' || selectedFiles.length === 1) {
+        // 単一ファイルアップロード
+        formData.append('image', selectedFiles[0]);
+        
+        const response = await fetch(`${API_BASE_URL}/api/upload`, {
+          method: 'POST',
+          body: formData
+        });
 
-      const response = await fetch(`${API_BASE_URL}/api/upload`, {
-        method: 'POST',
-        body: formData
-      });
+        const data = await response.json();
 
-      const data = await response.json();
-
-      if (data.success) {
-        setExtractedText(data.extractedText);
-        setActiveTab('text');
+        if (data.success) {
+          setExtractedText(data.extractedText);
+          setImageDetails([{
+            filename: selectedFiles[0].name,
+            content: data.extractedText,
+            confidence: data.confidence
+          }]);
+          setActiveTab('text');
+        } else {
+          setError(data.error || 'OCR処理に失敗しました');
+        }
       } else {
-        setError(data.error || 'OCR処理に失敗しました');
+        // 複数ファイルアップロード
+        selectedFiles.forEach(file => {
+          formData.append('images', file);
+        });
+
+        const endpoint = selectedFiles.length <= 10 ? '/api/upload/multiple' : '/api/upload/batch';
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setExtractedText(data.extractedText);
+          setImageDetails(data.imageDetails || []);
+          setActiveTab('text');
+        } else {
+          setError(data.error || '複数画像OCR処理に失敗しました');
+        }
       }
     } catch (error) {
       console.error('OCR Error:', error);
@@ -355,7 +387,7 @@ function App() {
       {/* ヘッダー */}
       <header style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ color: '#2c3e50' }}>🎓 学習サポートアプリ</h1>
-        <p style={{ color: '#666' }}>AI-powered学習支援システム</p>
+        <p style={{ color: '#666' }}>複数画像対応 AI学習支援システム</p>
         
         <button 
           onClick={testAPIConnection}
@@ -425,7 +457,31 @@ function App() {
         {/* 画像アップロードタブ */}
         {activeTab === 'upload' && (
           <div>
-            <h3>📷 画像アップロード（OCR機能）</h3>
+            <h3>📷 画像アップロード（複数対応OCR機能）</h3>
+            
+            {/* アップロードモード選択 */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ marginRight: '20px' }}>
+                <input
+                  type="radio"
+                  value="single"
+                  checked={uploadMode === 'single'}
+                  onChange={(e) => setUploadMode(e.target.value)}
+                  style={{ marginRight: '5px' }}
+                />
+                📄 単一画像
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  value="multiple"
+                  checked={uploadMode === 'multiple'}
+                  onChange={(e) => setUploadMode(e.target.value)}
+                  style={{ marginRight: '5px' }}
+                />
+                📚 複数画像（最大20枚）
+              </label>
+            </div>
             
             <div style={{
               border: '2px dashed #ddd',
@@ -437,6 +493,7 @@ function App() {
               <input
                 type="file"
                 accept="image/*"
+                multiple={uploadMode === 'multiple'}
                 onChange={handleFileSelect}
                 style={{ display: 'none' }}
                 id="file-input"
@@ -446,19 +503,42 @@ function App() {
                 color: '#007bff',
                 fontSize: '16px'
               }}>
-                📁 画像ファイルを選択してください
+                {uploadMode === 'single' 
+                  ? '📁 画像ファイルを選択してください' 
+                  : '📁 複数の画像ファイルを選択してください'
+                }
               </label>
               
-              {selectedFile && (
-                <div style={{ marginTop: '15px', color: '#28a745' }}>
-                  ✅ 選択済み: {selectedFile.name}
+              {selectedFiles.length > 0 && (
+                <div style={{ marginTop: '15px' }}>
+                  <div style={{ color: '#28a745', marginBottom: '10px' }}>
+                    ✅ {selectedFiles.length}枚の画像を選択済み
+                  </div>
+                  <div style={{ 
+                    maxHeight: '150px', 
+                    overflowY: 'auto', 
+                    fontSize: '14px',
+                    textAlign: 'left',
+                    backgroundColor: '#f8f9fa',
+                    padding: '10px',
+                    borderRadius: '4px'
+                  }}>
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} style={{ 
+                        padding: '2px 0',
+                        borderBottom: index < selectedFiles.length - 1 ? '1px solid #ddd' : 'none'
+                      }}>
+                        📄 {file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
             <button
               onClick={handleOCR}
-              disabled={!selectedFile || loading}
+              disabled={selectedFiles.length === 0 || loading}
               style={{
                 width: '100%',
                 padding: '15px',
@@ -470,17 +550,39 @@ function App() {
                 cursor: loading ? 'not-allowed' : 'pointer'
               }}
             >
-              {loading ? '🔄 処理中...' : '🚀 テキスト抽出開始'}
+              {loading 
+                ? '🔄 処理中...' 
+                : uploadMode === 'single' 
+                  ? '🚀 テキスト抽出開始' 
+                  : `🚀 ${selectedFiles.length}枚の画像からテキスト抽出`
+              }
             </button>
 
             <div style={{ marginTop: '20px', fontSize: '14px', color: '#666' }}>
-              <h4>📋 使用方法</h4>
+              <h4>📋 複数画像対応機能</h4>
               <ul style={{ textAlign: 'left' }}>
-                <li>学習教材、ノート、問題集などの画像をアップロード</li>
-                <li>AI（Gemini）が自動でテキストを読み取り</li>
-                <li>抽出したテキストから問題を自動生成</li>
-                <li>対応形式: JPEG, PNG, WebP（最大5MB）</li>
+                <li><strong>単一画像:</strong> 1枚の画像から高精度テキスト抽出</li>
+                <li><strong>複数画像:</strong> 最大20枚の画像を一括処理</li>
+                <li><strong>自動統合:</strong> 関連する内容を自動で結合</li>
+                <li><strong>バッチ処理:</strong> 大量画像は5枚ずつ分割処理</li>
+                <li><strong>対応形式:</strong> JPEG, PNG, WebP（各5MB以内）</li>
               </ul>
+              
+              <div style={{ 
+                marginTop: '15px', 
+                padding: '10px', 
+                backgroundColor: '#e7f3ff', 
+                borderRadius: '4px',
+                border: '1px solid #b3d9ff'
+              }}>
+                <strong>💡 使用例:</strong>
+                <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                  <li>問題集の連続ページ</li>
+                  <li>ノートの複数ページ</li>
+                  <li>問題と解答が別ページ</li>
+                  <li>教科書の章全体</li>
+                </ul>
+              </div>
             </div>
           </div>
         )}
@@ -492,12 +594,44 @@ function App() {
             
             {extractedText ? (
               <div>
+                {/* 画像詳細情報 */}
+                {imageDetails.length > 1 && (
+                  <div style={{ 
+                    marginBottom: '20px',
+                    padding: '15px',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <h4 style={{ margin: '0 0 10px 0', color: '#495057' }}>
+                      📊 処理結果詳細（{imageDetails.length}枚の画像）
+                    </h4>
+                    <div style={{ 
+                      maxHeight: '120px', 
+                      overflowY: 'auto',
+                      fontSize: '13px'
+                    }}>
+                      {imageDetails.map((detail, index) => (
+                        <div key={index} style={{ 
+                          padding: '5px 0',
+                          borderBottom: index < imageDetails.length - 1 ? '1px solid #ddd' : 'none'
+                        }}>
+                          <strong>画像{index + 1}:</strong> {detail.filename} 
+                          <span style={{ color: '#666', marginLeft: '10px' }}>
+                            (信頼度: {(detail.confidence * 100).toFixed(1)}%)
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <textarea
                   value={extractedText}
                   onChange={(e) => setExtractedText(e.target.value)}
                   style={{
                     width: '100%',
-                    minHeight: '200px',
+                    minHeight: '300px',
                     padding: '15px',
                     border: '1px solid #ddd',
                     borderRadius: '8px',
@@ -514,7 +648,7 @@ function App() {
                   alignItems: 'center'
                 }}>
                   <span style={{ color: '#666', fontSize: '14px' }}>
-                    📊 文字数: {extractedText.length}
+                    📊 文字数: {extractedText.length} | 画像数: {imageDetails.length}枚
                   </span>
                   
                   <button
@@ -610,10 +744,20 @@ function App() {
             borderRadius: '10px',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '48px', marginBottom: '15px' }}>🤖</div>
-            <div style={{ fontSize: '18px', color: '#333' }}>AI処理中...</div>
+            <div style={{ fontSize: '48px', marginBottom: '15px' }}>
+              {selectedFiles.length > 1 ? '📚' : '🤖'}
+            </div>
+            <div style={{ fontSize: '18px', color: '#333' }}>
+              {selectedFiles.length > 1 
+                ? `${selectedFiles.length}枚の画像を処理中...` 
+                : 'AI処理中...'
+              }
+            </div>
             <div style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
-              しばらくお待ちください
+              {selectedFiles.length > 10 
+                ? 'バッチ処理のため時間がかかります' 
+                : 'しばらくお待ちください'
+              }
             </div>
           </div>
         </div>
@@ -628,9 +772,12 @@ function App() {
         color: '#666',
         fontSize: '14px'
       }}>
-        <p>🎓 学習サポートアプリ v1.0.0</p>
+        <p>🎓 学習サポートアプリ v2.0.0 - 複数画像対応版</p>
         <p>Powered by Gemini AI | 開発者: T-aka-H</p>
         <p>API: <a href={API_BASE_URL} target="_blank" rel="noopener noreferrer">{API_BASE_URL}</a></p>
+        <p style={{ fontSize: '12px', marginTop: '10px' }}>
+          📚 複数画像同時処理 | 🔄 バッチ処理対応 | 📊 詳細解析結果表示
+        </p>
       </footer>
     </div>
   );
