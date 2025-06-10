@@ -19,7 +19,7 @@ services:
       - key: RENDER_EXTERNAL_URL
         value: https://learning-support-app-api.onrender.com
     autoDeploy: true
-    branch: main
+    branch: master
     rootDir: .
     
   # フロントエンド（静的サイト）
