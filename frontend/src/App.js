@@ -457,7 +457,7 @@ function App() {
         {/* 画像アップロードタブ */}
         {activeTab === 'upload' && (
           <div>
-            <h3>📷 画像アップロード（複数対応OCR機能）</h3>
+            <h3>📷 画像アップロード</h3>
             
             {/* アップロードモード選択 */}
             <div style={{ marginBottom: '20px' }}>
@@ -469,7 +469,7 @@ function App() {
                   onChange={(e) => setUploadMode(e.target.value)}
                   style={{ marginRight: '5px' }}
                 />
-                📄 単一画像
+                単一画像
               </label>
               <label>
                 <input
@@ -479,7 +479,7 @@ function App() {
                   onChange={(e) => setUploadMode(e.target.value)}
                   style={{ marginRight: '5px' }}
                 />
-                📚 複数画像（最大20枚）
+                複数画像（最大20枚）
               </label>
             </div>
             
