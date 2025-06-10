@@ -4,8 +4,10 @@ services:
     name: chuuju-study-app-api
     env: node
     plan: free
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: |
+      cd ../backend &&
+      npm install
+    startCommand: cd ../backend && npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -13,12 +15,12 @@ services:
       - key: GEMINI_API_KEY
         sync: false  # 環境変数として設定
       - key: FRONTEND_URL
-        value: https://chuuju-study-app.onrender.com
+        value: https://study-app.onrender.com
       - key: RENDER_EXTERNAL_URL
         value: https://chuuju-study-app-api.onrender.com
     autoDeploy: true
     branch: main
-    rootDir: ../backend
+    rootDir: .
     
   # フロントエンド（静的サイト）
   - type: static
