@@ -1,7 +1,7 @@
 services:
   # バックエンドAPI
   - type: web
-    name: chuuju-study-app-api
+    name: learning-support-app-api
     env: node
     plan: free
     buildCommand: |
@@ -15,16 +15,16 @@ services:
       - key: GEMINI_API_KEY
         sync: false  # 環境変数として設定
       - key: FRONTEND_URL
-        value: https://study-app.onrender.com
+        value: https://learning-support-app.onrender.com
       - key: RENDER_EXTERNAL_URL
-        value: https://chuuju-study-app-api.onrender.com
+        value: https://learning-support-app-api.onrender.com
     autoDeploy: true
     branch: main
     rootDir: .
     
   # フロントエンド（静的サイト）
   - type: static
-    name: chuuju-study-app
+    name: learning-support-app
     env: static
     plan: free
     buildCommand: |
@@ -35,7 +35,7 @@ services:
     pullRequestPreviewsEnabled: true
     envVars:
       - key: REACT_APP_API_URL
-        value: https://chuuju-study-app-api.onrender.com
+        value: https://learning-support-app-api.onrender.com
       - key: REACT_APP_ENV
         value: production
     headers:
