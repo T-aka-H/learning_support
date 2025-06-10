@@ -423,9 +423,9 @@ function App() {
       {/* タブメニュー */}
       <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
         {[
-          { id: 'upload', label: '画像アップロード' },
-          { id: 'text', label: '抽出テキスト' },
-          { id: 'questions', label: '生成問題' }
+          { id: 'upload', label: ['画像', 'アップロード'] },
+          { id: 'text', label: ['抽出テキスト'] },
+          { id: 'questions', label: ['生成問題'] }
         ].map(tab => (
           <button
             key={tab.id}
@@ -438,10 +438,20 @@ function App() {
               border: '1px solid #ddd',
               borderRadius: '8px',
               cursor: 'pointer',
-              minWidth: '120px'
+              minWidth: '120px',
+              lineHeight: '1.3'
             }}
           >
-            {tab.label}
+            {Array.isArray(tab.label) ? (
+              tab.label.map((line, index) => (
+                <span key={index}>
+                  {line}
+                  {index < tab.label.length - 1 && <br />}
+                </span>
+              ))
+            ) : (
+              tab.label
+            )}
           </button>
         ))}
       </div>
