@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="AI学習支援アプリ - Gemini AIを使用した個別学習サポート" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <title>学習サポートアプリ</title>
+    
+    <!-- プリロード用のスタイル -->
+    <style>
+      /* ローディング画面のスタイル */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      }
+      
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #e3e3e3;
+        border-top: 4px solid #007bff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      .loading-text {
+        color: #666;
+        font-size: 16px;
+        margin: 10px 0;
+      }
+      
+      .app-info {
+        text-align: center;
+        margin-top: 20px;
+        color: #888;
+        font-size: 14px;
+      }
+      
+      /* Reactアプリが読み込まれた後に非表示にする */
+      .app-loaded .loading-screen {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- JavaScript無効時のメッセージ -->
+    <noscript>
+      <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 20px;
+      ">
+        <h1 style="color: #dc3545; margin-bottom: 20px;">⚠️ JavaScript が無効です</h1>
+        <p style="color: #666; font-size: 16px; line-height: 1.5; max-width: 500px;">
+          この学習サポートアプリを使用するには、ブラウザでJavaScriptを有効にする必要があります。
+        </p>
+        <div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; max-width: 400px;">
+          <h3 style="color: #333; margin-bottom: 15px;">JavaScriptを有効にする方法:</h3>
+          <ul style="text-align: left; color: #666; line-height: 1.6;">
+            <li><strong>Chrome/Edge:</strong> 設定 → プライバシーとセキュリティ → サイトの設定 → JavaScript</li>
+            <li><strong>Firefox:</strong> about:config → javascript.enabled → true</li>
+            <li><strong>Safari:</strong> 環境設定 → セキュリティ → JavaScriptを有効にする</li>
+          </ul>
+        </div>
+      </div>
+    </noscript>
+
+    <!-- ローディング画面 -->
+    <div class="loading-screen" id="loading-screen">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">🎓 学習サポートアプリ</div>
+      <div class="loading-text">読み込み中...</div>
+      <div class="app-info">
+        <div>AI学習支援システム</div>
+        <div>Powered by Gemini AI</div>
+      </div>
+    </div>
+
+    <!-- Reactアプリのマウントポイント -->
+    <div id="root"></div>
+
+    <!-- ローディング画面を非表示にするスクリプト -->
+    <script>
+      // Reactアプリが読み込まれた後にローディング画面を非表示
+      document.addEventListener('DOMContentLoaded', function() {
+        // 3秒後に強制的にローディング画面を非表示（フォールバック）
+        setTimeout(function() {
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            loadingScreen.style.transition = 'opacity 0.5s ease';
+            setTimeout(function() {
+              loadingScreen.style.display = 'none';
+            }, 500);
+          }
+        }, 3000);
+      });
+
+      // Reactアプリがマウントされたことを検知
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'childList') {
+            const root = document.getElementById('root');
+            if (root && root.children.length > 0) {
+              // Reactアプリがマウントされた
+              document.body.classList.add('app-loaded');
+              const loadingScreen = document.getElementById('loading-screen');
+              if (loadingScreen) {
+                loadingScreen.style.opacity = '0';
+                loadingScreen.style.transition = 'opacity 0.3s ease';
+                setTimeout(function() {
+                  loadingScreen.style.display = 'none';
+                }, 300);
+              }
+              observer.disconnect();
+            }
+          }
+        });
+      });
+
+      // root要素の変更を監視
+      const rootElement = document.getElementById('root');
+      if (rootElement) {
+        observer.observe(rootElement, { childList: true, subtree: true });
+      }
+
+      // エラーハンドリング
+      window.addEventListener('error', function(event) {
+        console.error('Page error:', event.error);
+        
+        // 重大なエラーの場合はローディング画面を更新
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen && loadingScreen.style.display !== 'none') {
+          const loadingText = loadingScreen.querySelector('.loading-text');
+          if (loadingText) {
+            loadingText.textContent = '読み込みエラーが発生しました';
+            loadingText.style.color = '#dc3545';
+          }
+          
+          // リロードボタンを追加
+          const reloadBtn = document.createElement('button');
+          reloadBtn.textContent = '🔄 再読み込み';
+          reloadBtn.style.cssText = `
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+          `;
+          reloadBtn.onclick = function() {
+            window.location.reload();
+          };
+          loadingScreen.appendChild(reloadBtn);
+        }
+      });
+
+      // パフォーマンス情報の記録
+      window.addEventListener('load', function() {
+        if (window.performance && window.performance.timing) {
+          const loadTime = window.performance.timing.loadEventEnd - window.performance.timing.navigationStart;
+          console.log('Page load time:', loadTime + 'ms');
+        }
+      });
+    </script>
+  </body>
+</html>
