@@ -5,9 +5,9 @@ services:
     env: node
     plan: free
     buildCommand: |
-      cd ../backend &&
+      cp -r ../backend/* . &&
       npm install
-    startCommand: cd ../backend && npm start
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
