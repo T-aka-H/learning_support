@@ -80,8 +80,8 @@ const QuestionCard = ({ question, questionNumber }) => {
 
             if (showResult) {
               if (optionIndex === question.correctAnswer) {
-                backgroundColor = '#d4edda';
-                borderColor = '#28a745';
+                backgroundColor = '#d1ecf1';
+                borderColor = '#007bff';
                 icon = ' ✅';
               } else if (selectedAnswer === optionIndex && optionIndex !== question.correctAnswer) {
                 backgroundColor = '#f8d7da';
@@ -117,7 +117,7 @@ const QuestionCard = ({ question, questionNumber }) => {
               style={{
                 width: '100%',
                 padding: '12px',
-                backgroundColor: '#28a745',
+                backgroundColor: '#007bff',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
@@ -136,8 +136,8 @@ const QuestionCard = ({ question, questionNumber }) => {
               marginTop: '15px',
               padding: '15px',
               borderRadius: '8px',
-              backgroundColor: selectedAnswer === question.correctAnswer ? '#d4edda' : '#f8d7da',
-              border: `1px solid ${selectedAnswer === question.correctAnswer ? '#c3e6cb' : '#f5c6cb'}`
+              backgroundColor: selectedAnswer === question.correctAnswer ? '#d1ecf1' : '#f8d7da',
+              border: `1px solid ${selectedAnswer === question.correctAnswer ? '#bee5eb' : '#f5c6cb'}`
             }}>
               <h5 style={{ margin: '0 0 10px 0' }}>
                 {selectedAnswer === question.correctAnswer ? '🎉 正解！' : '😞 不正解'}
@@ -171,7 +171,7 @@ const QuestionCard = ({ question, questionNumber }) => {
               onClick={handleSubmitAnswer}
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#28a745',
+                backgroundColor: '#007bff',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
@@ -184,7 +184,7 @@ const QuestionCard = ({ question, questionNumber }) => {
 
           {showResult && (
             <div style={{
-              backgroundColor: '#d4edda',
+              backgroundColor: '#d1ecf1',
               padding: '15px',
               borderRadius: '4px',
               marginTop: '10px'
@@ -203,7 +203,7 @@ const QuestionCard = ({ question, questionNumber }) => {
               onClick={handleShowExplanation}
               style={{
                 padding: '8px 16px',
-                backgroundColor: '#17a2b8',
+                backgroundColor: '#007bff',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
@@ -393,7 +393,7 @@ function App() {
           onClick={testAPIConnection}
           style={{
             padding: '8px 16px',
-            backgroundColor: '#17a2b8',
+            backgroundColor: '#007bff',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
@@ -421,11 +421,11 @@ function App() {
       )}
 
       {/* タブメニュー */}
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
         {[
-          { id: 'upload', label: '📷 画像アップロード', icon: '📷' },
-          { id: 'text', label: '📝 抽出テキスト', icon: '📝' },
-          { id: 'questions', label: '❓ 生成問題', icon: '❓' }
+          { id: 'upload', label: '画像アップロード' },
+          { id: 'text', label: '抽出テキスト' },
+          { id: 'questions', label: '生成問題' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -436,11 +436,12 @@ function App() {
               backgroundColor: activeTab === tab.id ? '#007bff' : '#f8f9fa',
               color: activeTab === tab.id ? 'white' : '#333',
               border: '1px solid #ddd',
-              borderRadius: '8px 8px 0 0',
-              cursor: 'pointer'
+              borderRadius: '8px',
+              cursor: 'pointer',
+              minWidth: '120px'
             }}
           >
-            {tab.icon} {tab.label}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -448,7 +449,7 @@ function App() {
       {/* コンテンツエリア */}
       <div style={{
         border: '1px solid #ddd',
-        borderRadius: '0 8px 8px 8px',
+        borderRadius: '8px',
         padding: '20px',
         backgroundColor: '#fff',
         minHeight: '400px'
@@ -457,7 +458,7 @@ function App() {
         {/* 画像アップロードタブ */}
         {activeTab === 'upload' && (
           <div>
-            <h3>📷 画像アップロード</h3>
+            <h3>画像アップロード</h3>
             
             {/* アップロードモード選択 */}
             <div style={{ marginBottom: '20px' }}>
@@ -542,7 +543,7 @@ function App() {
               style={{
                 width: '100%',
                 padding: '15px',
-                backgroundColor: loading ? '#6c757d' : '#28a745',
+                backgroundColor: loading ? '#6c757d' : '#007bff',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
@@ -590,7 +591,7 @@ function App() {
         {/* 抽出テキストタブ */}
         {activeTab === 'text' && (
           <div>
-            <h3>📝 抽出されたテキスト</h3>
+            <h3>抽出されたテキスト</h3>
             
             {extractedText ? (
               <div>
@@ -656,8 +657,8 @@ function App() {
                     disabled={loading || !extractedText}
                     style={{
                       padding: '10px 20px',
-                      backgroundColor: loading ? '#6c757d' : '#ffc107',
-                      color: loading ? 'white' : '#212529',
+                      backgroundColor: loading ? '#6c757d' : '#007bff',
+                      color: 'white',
                       border: 'none',
                       borderRadius: '6px',
                       cursor: loading ? 'not-allowed' : 'pointer',
@@ -683,7 +684,7 @@ function App() {
         {/* 生成問題タブ */}
         {activeTab === 'questions' && (
           <div>
-            <h3>❓ 生成された問題</h3>
+            <h3>生成された問題</h3>
             
             {questions.length > 0 ? (
               <div>
@@ -701,7 +702,7 @@ function App() {
                   style={{
                     width: '100%',
                     padding: '12px',
-                    backgroundColor: '#17a2b8',
+                    backgroundColor: '#007bff',
                     color: 'white',
                     border: 'none',
                     borderRadius: '6px',
