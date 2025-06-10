@@ -1,0 +1,126 @@
+{
+    "short_name": "学習サポート",
+    "name": "学習サポートアプリ",
+    "description": "テキストの写真から自動で問題を生成する学習支援アプリ - 資格試験、ビジネス学習、受験対策に対応",
+    "icons": [
+      {
+        "src": "favicon.ico",
+        "sizes": "64x64 32x32 24x24 16x16",
+        "type": "image/x-icon"
+      },
+      {
+        "src": "logo192.png",
+        "type": "image/png",
+        "sizes": "192x192"
+      },
+      {
+        "src": "logo512.png",
+        "type": "image/png",
+        "sizes": "512x512"
+      },
+      {
+        "src": "maskable-icon-192.png",
+        "type": "image/png",
+        "sizes": "192x192",
+        "purpose": "maskable"
+      },
+      {
+        "src": "maskable-icon-512.png",
+        "type": "image/png",
+        "sizes": "512x512",
+        "purpose": "maskable"
+      }
+    ],
+    "start_url": "./",
+    "display": "standalone",
+    "theme_color": "#007bff",
+    "background_color": "#ffffff",
+    "orientation": "portrait",
+    "scope": "./",
+    "lang": "ja",
+    "categories": ["education", "productivity"],
+    "screenshots": [
+      {
+        "src": "screenshot-narrow.png",
+        "sizes": "640x1136",
+        "type": "image/png",
+        "form_factor": "narrow"
+      },
+      {
+        "src": "screenshot-wide.png",
+        "sizes": "1024x768",
+        "type": "image/png",
+        "form_factor": "wide"
+      }
+    ],
+    "shortcuts": [
+      {
+        "name": "カメラで撮影",
+        "short_name": "カメラ",
+        "description": "カメラでテキストを撮影して問題を作成",
+        "url": "/camera",
+        "icons": [
+          {
+            "src": "camera-icon-96.png",
+            "sizes": "96x96"
+          }
+        ]
+      },
+      {
+        "name": "ファイルアップロード",
+        "short_name": "アップロード",
+        "description": "画像ファイルから問題を作成",
+        "url": "/upload",
+        "icons": [
+          {
+            "src": "upload-icon-96.png",
+            "sizes": "96x96"
+          }
+        ]
+      },
+      {
+        "name": "学習履歴",
+        "short_name": "履歴",
+        "description": "過去の学習記録を確認",
+        "url": "/history",
+        "icons": [
+          {
+            "src": "history-icon-96.png",
+            "sizes": "96x96"
+          }
+        ]
+      }
+    ],
+    "prefer_related_applications": false,
+    "related_applications": [],
+    "share_target": {
+      "action": "/upload",
+      "method": "GET",
+      "enctype": "application/x-www-form-urlencoded",
+      "params": {
+        "title": "title",
+        "text": "text",
+        "url": "url",
+        "files": [
+          {
+            "name": "image",
+            "accept": ["image/*"]
+          }
+        ]
+      }
+    },
+    "file_handlers": [
+      {
+        "action": "/upload",
+        "accept": {
+          "image/*": [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"]
+        }
+      }
+    ],
+    "protocol_handlers": [
+      {
+        "protocol": "web+learningsupport",
+        "url": "/?action=%s"
+      }
+    ]
+  }

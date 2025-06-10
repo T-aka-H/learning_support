@@ -1,0 +1,229 @@
+# 中学受験復習アプリ
+
+テキストの写真をアップロードするだけで、AIが自動的に10問の選択式テストを生成する中学受験対策アプリです。
+
+## 🚀 特徴
+
+- **📱 スマートフォン対応**: PWA対応でアプリライクな操作性
+- **📷 カメラ撮影**: スマホのカメラで直接テキストを撮影
+- **🤖 AI自動生成**: Gemini 1.5 Flash APIによる高精度OCR＋問題生成
+- **📚 中学受験特化**: 4科目（国語・算数・理科・社会）に対応
+- **📊 学習管理**: ローカルストレージによる履歴管理
+- **🎯 難易度調整**: 基礎〜発展まで4段階の難易度設定
+- **💾 データベース不要**: シンプルなアーキテクチャ
+
+## 🛠 技術スタック
+
+### フロントエンド
+- React 18.3.1
+- React Router v6
+- react-webcam (カメラ機能)
+- PWA対応 (Service Worker)
+
+### バックエンド
+- Node.js + Express
+- Gemini 1.5 Flash API
+- Sharp (画像処理)
+- Multer (ファイルアップロード)
+
+### デプロイ
+- Render (無料枠)
+- 静的サイト + Web Service
+
+## 📦 セットアップ
+
+### 前提条件
+- Node.js 18以上
+- npm 8以上
+- Gemini API キー
+
+### 1. リポジトリのクローン
+```bash
+git clone https://github.com/your-username/chuuju-study-app.git
+cd chuuju-study-app
+```
+
+### 2. 環境変数の設定
+```bash
+# ルートディレクトリに.envファイルを作成
+cp .env.example .env
+
+# フロントエンド用環境変数
+cd frontend
+cp .env.example .env
+cd ..
+```
+
+`.env`ファイルを編集してGemini API キーを設定:
+```bash
+GEMINI_API_KEY=your_actual_api_key_here
+```
+
+### 3. 依存関係のインストール
+
+**バックエンド:**
+```bash
+npm install
+```
+
+**フロントエンド:**
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+### 4. 開発サーバーの起動
+
+**バックエンド (ポート10000):**
+```bash
+npm run dev
+```
+
+**フロントエンド (ポート3000):**
+```bash
+cd frontend
+npm start
+```
+
+### 5. アクセス
+ブラウザで `http://localhost:3000` にアクセス
+
+## 🚀 Renderへのデプロイ
+
+### 1. GitHubリポジトリの準備
+コードをGitHubにプッシュ
+
+### 2. Renderアカウントの作成
+[Render.com](https://render.com) でアカウント作成
+
+### 3. 環境変数の設定
+Renderダッシュボードで以下を設定:
+- `GEMINI_API_KEY`: あなたのGemini APIキー
+- `NODE_ENV`: `production`
+
+### 4. 自動デプロイ
+`render.yaml`設定により、GitHubプッシュで自動デプロイ
+
+## 📱 使用方法
+
+### 基本的な流れ
+1. **📷 撮影 / 📁 アップロード**: テキストの写真を用意
+2. **⚙️ 設定**: 科目・難易度を選択（自動判定も可能）
+3. **🤖 AI処理**: OCR→問題生成（約30秒）
+4. **📝 テスト**: 10問の選択式問題に回答
+5. **📊 結果**: 採点結果と解説を確認
+
+### 科目・難易度設定
+- **科目**: 自動判定/国語/算数/理科/社会
+- **難易度**: 基礎/標準/応用/発展
+
+### 学習履歴
+- 過去の問題・結果をローカルに保存
+- 科目別・難易度別の統計表示
+- データのエクスポート/インポート機能
+
+## 🔧 設定とカスタマイズ
+
+### API使用量の最適化
+```javascript
+// 画像サイズ制限 (server.js)
+app.use(express.json({ limit: '10mb' }));
+
+// 画像前処理による品質とサイズのバランス調整
+const processedBuffer = await sharp(buffer)
+  .resize(2048, 2048, { fit: 'inside' })
+  .jpeg({ quality: 85 })
+  .toBuffer();
+```
+
+### Render無料枠でのスリープ対策
+```javascript
+// 14分間隔でのヘルスチェック
+cron.schedule('*/14 * * * *', () => {
+  https.get(`${process.env.RENDER_EXTERNAL_URL}/health`);
+});
+```
+
+## 📊 コスト見積もり
+
+### 無料枠での運用
+- **Render**: Web Service + Static Site (無料)
+- **Gemini API**: 月100万トークン無料枠
+- **想定使用量**: 月50-100問題生成 (十分無料範囲内)
+
+### 有料プランへの移行タイミング
+- Render: 月750時間超過時 ($7/月〜)
+- Gemini API: 月100万トークン超過時
+
+## 🛡 セキュリティ
+
+### フロントエンド
+- Content Security Policy (CSP)
+- XSS対策
+- CSRF対策
+
+### バックエンド
+- Helmet.js によるセキュリティヘッダー
+- ファイルサイズ制限
+- レート制限
+- 入力検証
+
+## 🔍 トラブルシューティング
+
+### よくある問題
+
+**1. カメラが動作しない**
+- ブラウザの権限設定を確認
+- HTTPS環境での使用を推奨
+
+**2. OCRの精度が低い**
+- 明るい環境で撮影
+- 文字がはっきり見える画像を使用
+- 画像の向きを正しく調整
+
+**3. 問題生成が失敗する**
+- API キーの設定を確認
+- ネットワーク接続を確認
+- テキスト量が十分かチェック
+
+**4. Renderでスリープする**
+- アクセス頻度を上げる
+- 有料プランへの移行を検討
+
+### ログの確認
+```bash
+# 開発環境
+npm run dev
+
+# 本番環境（Renderダッシュボード）
+Logs → Live logs
+```
+
+## 🤝 コントリビューション
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 ライセンス
+
+MIT License
+
+## 🙏 謝辞
+
+- [Google Generative AI](https://ai.google.dev/) - OCR・問題生成API
+- [Render.com](https://render.com) - ホスティングサービス
+- [React](https://reactjs.org/) - フロントエンドフレームワーク
+- [Express.js](https://expressjs.com/) - バックエンドフレームワーク
+
+## 📞 サポート
+
+質問やバグ報告は [Issues](https://github.com/your-username/chuuju-study-app/issues) でお願いします。
+
+---
+
+**開発者**: あなたの名前  
+**更新日**: 2025年6月
