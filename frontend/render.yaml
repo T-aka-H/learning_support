@@ -1,0 +1,65 @@
+services:
+  # バックエンドAPI
+  - type: web
+    name: chuuju-study-app-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false  # 環境変数として設定
+      - key: FRONTEND_URL
+        value: https://chuuju-study-app.onrender.com
+      - key: RENDER_EXTERNAL_URL
+        value: https://chuuju-study-app-api.onrender.com
+    autoDeploy: true
+    branch: main
+    rootDir: ../backend
+    
+  # フロントエンド（静的サイト）
+  - type: static
+    name: chuuju-study-app
+    env: static
+    plan: free
+    buildCommand: |
+      cd frontend &&
+      npm install &&
+      npm run build
+    publishDir: frontend/build
+    pullRequestPreviewsEnabled: true
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://chuuju-study-app-api.onrender.com
+      - key: REACT_APP_ENV
+        value: production
+    headers:
+      - path: "/*"
+        name: X-Frame-Options
+        value: DENY
+      - path: "/*"
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: "/*"
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: "/manifest.json"
+        name: Content-Type
+        value: application/manifest+json
+      - path: "/service-worker.js"
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: "/*"
+        destination: "/index.html"
+    autoDeploy: true
+    branch: main
+    rootDir: ./
+
+# 環境変数の設定例（実際は Render ダッシュボードで設定）
+# GEMINI_API_KEY: your_gemini_api_key_here
+# NODE_ENV: production

@@ -1,7 +1,7 @@
 {
-    "name": "earning-support-app-backend",
+    "name": "learning-support-app-backend",
     "version": "1.0.0",
-    "description": "中学受験復習アプリ バックエンド",
+    "description": "学習サポートアプリ バックエンド - 資格試験、ビジネス学習、受験対策対応",
     "main": "server.js",
     "scripts": {
       "start": "node server.js",
@@ -12,9 +12,13 @@
     },
     "keywords": [
       "education",
+      "learning-support",
       "ocr",
-      "quiz",
-      "middle-school-exam"
+      "quiz-generator",
+      "certification-exam",
+      "business-training",
+      "adaptive-learning",
+      "study-assistant"
     ],
     "author": "Your Name",
     "license": "MIT",
