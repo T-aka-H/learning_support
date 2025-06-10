@@ -2,6 +2,238 @@ import React, { useState } from 'react';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://learning-support-app-api.onrender.com';
 
+// 問題カードコンポーネント
+const QuestionCard = ({ question, questionNumber }) => {
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [showResult, setShowResult] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
+
+  const handleAnswerSelect = (answerIndex) => {
+    setSelectedAnswer(answerIndex);
+  };
+
+  const handleSubmitAnswer = () => {
+    setShowResult(true);
+  };
+
+  const handleShowExplanation = () => {
+    setShowExplanation(true);
+  };
+
+  const resetQuestion = () => {
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setShowExplanation(false);
+  };
+
+  return (
+    <div style={{
+      border: '1px solid #e9ecef',
+      borderRadius: '8px',
+      padding: '20px',
+      marginBottom: '20px',
+      backgroundColor: '#f8f9fa'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+        <h4 style={{ color: '#495057', margin: 0 }}>
+          問題 {questionNumber}
+        </h4>
+        
+        {(showResult || showExplanation) && (
+          <button
+            onClick={resetQuestion}
+            style={{
+              padding: '4px 8px',
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            🔄 リセット
+          </button>
+        )}
+      </div>
+      
+      <p style={{ 
+        fontSize: '16px', 
+        lineHeight: '1.6',
+        marginBottom: '20px'
+      }}>
+        {question.question}
+      </p>
+
+      {/* 選択肢問題の場合 */}
+      {question.options && (
+        <div style={{ marginBottom: '20px' }}>
+          {question.options.map((option, optionIndex) => {
+            let backgroundColor = '#fff';
+            let borderColor = '#ddd';
+            let icon = '';
+
+            if (selectedAnswer === optionIndex) {
+              backgroundColor = '#e3f2fd';
+              borderColor = '#2196f3';
+            }
+
+            if (showResult) {
+              if (optionIndex === question.correctAnswer) {
+                backgroundColor = '#d4edda';
+                borderColor = '#28a745';
+                icon = ' ✅';
+              } else if (selectedAnswer === optionIndex && optionIndex !== question.correctAnswer) {
+                backgroundColor = '#f8d7da';
+                borderColor = '#dc3545';
+                icon = ' ❌';
+              }
+            }
+
+            return (
+              <div 
+                key={optionIndex} 
+                onClick={() => !showResult && handleAnswerSelect(optionIndex)}
+                style={{
+                  padding: '12px 15px',
+                  margin: '8px 0',
+                  backgroundColor: backgroundColor,
+                  border: `2px solid ${borderColor}`,
+                  borderRadius: '6px',
+                  cursor: showResult ? 'default' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  userSelect: 'none'
+                }}
+              >
+                <strong>{String.fromCharCode(65 + optionIndex)}.</strong> {option}{icon}
+              </div>
+            );
+          })}
+          
+          {/* 解答ボタン */}
+          {!showResult && selectedAnswer !== null && (
+            <button
+              onClick={handleSubmitAnswer}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '16px',
+                cursor: 'pointer',
+                marginTop: '15px'
+              }}
+            >
+              📝 解答する
+            </button>
+          )}
+
+          {/* 結果表示 */}
+          {showResult && (
+            <div style={{
+              marginTop: '15px',
+              padding: '15px',
+              borderRadius: '8px',
+              backgroundColor: selectedAnswer === question.correctAnswer ? '#d4edda' : '#f8d7da',
+              border: `1px solid ${selectedAnswer === question.correctAnswer ? '#c3e6cb' : '#f5c6cb'}`
+            }}>
+              <h5 style={{ margin: '0 0 10px 0' }}>
+                {selectedAnswer === question.correctAnswer ? '🎉 正解！' : '😞 不正解'}
+              </h5>
+              <p style={{ margin: 0 }}>
+                正解: <strong>{String.fromCharCode(65 + question.correctAnswer)}. {question.options[question.correctAnswer]}</strong>
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 記述・計算問題の場合 */}
+      {question.correctAnswer && !question.options && (
+        <div>
+          <textarea
+            placeholder="ここに解答を入力してください..."
+            style={{
+              width: '100%',
+              minHeight: '100px',
+              padding: '10px',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              marginBottom: '10px',
+              resize: 'vertical'
+            }}
+          />
+          
+          {!showResult && (
+            <button
+              onClick={handleSubmitAnswer}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              📝 解答確認
+            </button>
+          )}
+
+          {showResult && (
+            <div style={{
+              backgroundColor: '#d4edda',
+              padding: '15px',
+              borderRadius: '4px',
+              marginTop: '10px'
+            }}>
+              <strong>💡 模範解答:</strong> {question.correctAnswer}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 解説表示ボタンと解説 */}
+      {question.explanation && (
+        <div style={{ marginTop: '15px' }}>
+          {!showExplanation && (showResult || !question.options) && (
+            <button
+              onClick={handleShowExplanation}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#17a2b8',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              📚 解説を見る
+            </button>
+          )}
+
+          {showExplanation && (
+            <div style={{
+              backgroundColor: '#e2e3e5',
+              padding: '15px',
+              borderRadius: '4px',
+              fontSize: '14px',
+              marginTop: '10px',
+              lineHeight: '1.5'
+            }}>
+              <strong>📝 解説:</strong><br />
+              {question.explanation}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [extractedText, setExtractedText] = useState('');
@@ -322,67 +554,11 @@ function App() {
             {questions.length > 0 ? (
               <div>
                 {questions.map((question, index) => (
-                  <div key={question.id || index} style={{
-                    border: '1px solid #e9ecef',
-                    borderRadius: '8px',
-                    padding: '20px',
-                    marginBottom: '20px',
-                    backgroundColor: '#f8f9fa'
-                  }}>
-                    <h4 style={{ color: '#495057', marginBottom: '15px' }}>
-                      問題 {index + 1}
-                    </h4>
-                    
-                    <p style={{ 
-                      fontSize: '16px', 
-                      lineHeight: '1.6',
-                      marginBottom: '15px'
-                    }}>
-                      {question.question}
-                    </p>
-
-                    {/* 選択肢問題の場合 */}
-                    {question.options && (
-                      <div style={{ marginBottom: '15px' }}>
-                        {question.options.map((option, optionIndex) => (
-                          <div key={optionIndex} style={{
-                            padding: '8px 12px',
-                            margin: '5px 0',
-                            backgroundColor: optionIndex === question.correctAnswer ? '#d4edda' : '#fff',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px'
-                          }}>
-                            {String.fromCharCode(65 + optionIndex)}. {option}
-                            {optionIndex === question.correctAnswer && ' ✅'}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* 記述・計算問題の場合 */}
-                    {question.correctAnswer && !question.options && (
-                      <div style={{
-                        backgroundColor: '#d4edda',
-                        padding: '10px',
-                        borderRadius: '4px',
-                        marginBottom: '15px'
-                      }}>
-                        <strong>解答:</strong> {question.correctAnswer}
-                      </div>
-                    )}
-
-                    {/* 解説 */}
-                    {question.explanation && (
-                      <div style={{
-                        backgroundColor: '#e2e3e5',
-                        padding: '10px',
-                        borderRadius: '4px',
-                        fontSize: '14px'
-                      }}>
-                        <strong>📝 解説:</strong> {question.explanation}
-                      </div>
-                    )}
-                  </div>
+                  <QuestionCard 
+                    key={question.id || index} 
+                    question={question} 
+                    questionNumber={index + 1} 
+                  />
                 ))}
                 
                 <button
@@ -461,4 +637,3 @@ function App() {
 }
 
 export default App;
-  
