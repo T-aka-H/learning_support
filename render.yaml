@@ -18,7 +18,7 @@ services:
         value: https://learning-support-app-api.onrender.com
     autoDeploy: true
     branch: master
-    rootDir: .
+    rootDir: backend
     
   # フロントエンド（静的サイト）
   - type: static
