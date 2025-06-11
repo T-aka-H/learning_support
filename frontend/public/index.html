@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="AI学習支援アプリ - Gemini AIを使用した個別学習サポート" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>学習サポートアプリ</title>
     
@@ -187,12 +186,22 @@
         }
       });
 
-      // パフォーマンス情報の記録
-      const startTime = performance.now();
-
-      window.addEventListener('load', function() {
-        const loadTime = performance.now() - startTime;
+      // パフォーマンス情報の記録 - 修正版
+      document.addEventListener('DOMContentLoaded', function() {
+        const loadTime = performance.now();
         console.log('Page load time:', loadTime.toFixed(2) + 'ms');
+      });
+
+      // Navigation Timing APIを使用した詳細な計測
+      window.addEventListener('load', function() {
+        if (performance.timing) {
+          const navigation = performance.timing;
+          const totalTime = navigation.loadEventEnd - navigation.navigationStart;
+          const domTime = navigation.domContentLoadedEventEnd - navigation.navigationStart;
+          
+          console.log('DOM load time:', domTime + 'ms');
+          console.log('Total load time:', totalTime + 'ms');
+        }
       });
     </script>
   </body>
