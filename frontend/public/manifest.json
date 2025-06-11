@@ -4,6 +4,5 @@
   "start_url": "/",
   "display": "standalone",
   "theme_color": "#2196f3",
-  "background_color": "#ffffff",
-  "description": "画像からテキストを抽出し、問題を生成する学習サポートアプリ"
+  "background_color": "#ffffff"
 }

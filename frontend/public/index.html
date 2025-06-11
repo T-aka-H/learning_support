@@ -188,11 +188,11 @@
       });
 
       // パフォーマンス情報の記録
+      const startTime = performance.now();
+
       window.addEventListener('load', function() {
-        if (window.performance && window.performance.timing) {
-          const loadTime = window.performance.timing.loadEventEnd - window.performance.timing.navigationStart;
-          console.log('Page load time:', loadTime + 'ms');
-        }
+        const loadTime = performance.now() - startTime;
+        console.log('Page load time:', loadTime.toFixed(2) + 'ms');
       });
     </script>
   </body>
