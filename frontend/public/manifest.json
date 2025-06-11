@@ -1,93 +1,12 @@
-const CACHE_NAME = 'learning-support-app-v1';
-
-// 基本的なキャッシュ対象
-const urlsToCache = [
-  '/',
-  '/static/css/main.31d6cfe0.css'
-];
-
-console.log('[SW] Service Worker loaded successfully');
-
-self.addEventListener('install', event => {
-  console.log('[SW] Installing...');
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('[SW] Caching static resources');
-        // エラーハンドリングを追加
-        return cache.addAll(urlsToCache).catch(error => {
-          console.error('[SW] Cache addAll failed:', error);
-          // 個別にキャッシュを試行
-          return Promise.allSettled(
-            urlsToCache.map(url => cache.add(url))
-          );
-        });
-      })
-      .then(() => {
-        console.log('[SW] Installation complete');
-        return self.skipWaiting();
-      })
-      .catch(error => {
-        console.error('[SW] Installation failed:', error);
-      })
-  );
-});
-
-self.addEventListener('activate', event => {
-  console.log('[SW] Activating...');
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('[SW] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => {
-      console.log('[SW] Activation complete');
-      return self.clients.claim();
-    })
-  );
-});
-
-self.addEventListener('fetch', event => {
-  // GETリクエストのみ処理
-  if (event.request.method !== 'GET') {
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
-        }
-        
-        return fetch(event.request).then(response => {
-          // レスポンスが有効でない場合はそのまま返す
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              console.log('[SW] Cached new resource:', event.request.url);
-              cache.put(event.request, responseToCache);
-            })
-            .catch(error => {
-              console.error('[SW] Cache put failed:', error);
-            });
-          
-          return response;
-        });
-      })
-      .catch(error => {
-        console.error('[SW] Fetch failed:', error);
-        // オフライン時のフォールバック
-        return caches.match('/');
-      })
-  );
-});
+{
+  "short_name": "学習サポート",
+  "name": "学習サポートアプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#2196f3",
+  "background_color": "#ffffff",
+  "description": "画像からテキストを抽出し、問題を生成する学習サポートアプリ",
+  "scope": "/",
+  "lang": "ja",
+  "orientation": "portrait"
+}
