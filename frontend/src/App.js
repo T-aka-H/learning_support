@@ -657,6 +657,102 @@ function App() {
                   }}
                 />
                 
+                {/* 問題生成設定 */}
+                <div style={{
+                  marginTop: '20px',
+                  padding: '20px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '8px',
+                  border: '1px solid #e9ecef'
+                }}>
+                  <h4 style={{ margin: '0 0 15px 0', color: '#495057' }}>⚙️ 問題生成設定</h4>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
+                    {/* 問題数設定 */}
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px' }}>
+                        📊 問題数
+                      </label>
+                      <select
+                        value={questionCount}
+                        onChange={(e) => setQuestionCount(Number(e.target.value))}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <option value={1}>1問</option>
+                        <option value={3}>3問</option>
+                        <option value={5}>5問</option>
+                        <option value={10}>10問</option>
+                      </select>
+                    </div>
+
+                    {/* 難易度設定 */}
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px' }}>
+                        🎯 難易度
+                      </label>
+                      <select
+                        value={difficulty}
+                        onChange={(e) => setDifficulty(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <option value="easy">😊 易しい</option>
+                        <option value="standard">😐 普通</option>
+                        <option value="hard">😤 難しい</option>
+                      </select>
+                    </div>
+
+                    {/* 問題タイプ設定 */}
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px' }}>
+                        📝 問題タイプ
+                      </label>
+                      <select
+                        value={questionType}
+                        onChange={(e) => setQuestionType(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <option value="multiple_choice">選択問題</option>
+                        <option value="descriptive">記述問題</option>
+                        <option value="mixed">混合問題</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* 設定説明 */}
+                  <div style={{ 
+                    marginTop: '15px', 
+                    fontSize: '12px', 
+                    color: '#666',
+                    backgroundColor: '#fff',
+                    padding: '10px',
+                    borderRadius: '4px',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <strong>💡 設定ガイド:</strong><br />
+                    • <strong>易しい:</strong> 基本的な理解を確認する問題<br />
+                    • <strong>普通:</strong> 標準的な理解度チェック<br />
+                    • <strong>難しい:</strong> 応用力を試す問題
+                  </div>
+                </div>
+                
                 <div style={{ 
                   marginTop: '15px', 
                   display: 'flex', 
