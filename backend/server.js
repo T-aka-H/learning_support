@@ -237,6 +237,7 @@ const server = app.listen(PORT, () => {
 🆔 Process ID: ${process.pid}
 ⏰ Started at: ${new Date().toISOString()}
 📊 Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB
+💤 Keep-alive disabled - service will sleep after 15 minutes of inactivity
 
 🎯 Available endpoints:
    GET  /          - API情報
@@ -250,27 +251,7 @@ Ready to accept connections! 🎉
   `);
 });
 
-// Render 無料枠スリープ対策（本番環境のみ）
-if (process.env.NODE_ENV === 'production') {
-  const cron = require('node-cron');
-  
-  // 14分ごとに自分自身にリクエストを送ってスリープを防ぐ
-  cron.schedule('*/14 * * * *', async () => {
-    try {
-      const https = require('https');
-      const url = process.env.RENDER_EXTERNAL_URL || 'https://learning-support-app-api.onrender.com';
-      
-      https.get(`${url}/health`, (res) => {
-        console.log(`⏰ Keep-alive ping: ${res.statusCode} - ${new Date().toISOString()}`);
-      }).on('error', (err) => {
-        console.log('❌ Keep-alive ping failed:', err.message);
-      });
-    } catch (error) {
-      console.log('❌ Keep-alive cron error:', error.message);
-    }
-  });
-  
-  console.log('⏰ Keep-alive cron job started (14-minute intervals)');
-}
+// Keep-alive機能は完全に削除されました
+// サービスは15分間アクセスがないとスリープ状態になります
 
 module.exports = app;
